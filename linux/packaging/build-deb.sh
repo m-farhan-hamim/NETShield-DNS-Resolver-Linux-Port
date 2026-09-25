@@ -27,7 +27,9 @@ PKG=netshield-dns
 
 VERSION="${DEB_VERSION:-}"
 if [ -z "$VERSION" ] && [ -f "$REPO/app/build.gradle.kts" ]; then
-    VERSION="$(sed -n 's/.*versionName *= *"\([^"]*\)".*/\1/p' "$REPO/app/build.gradle.kts" | head -n1)"
+    VERSION="$(grep -h 'versionName' "$REPO/app/build.gradle.kts" \
+              | sed -nE 's/.*versionName[^"'"'"']*["'"'"']([^"'"'"']+)["'"'"'].*/\1/p' \
+              | head -n1)"
 fi
 VERSION="${VERSION:-0.0.0}"
 # Debian versions must start with a digit (strip a leading "v" from tags like v3.0.0).

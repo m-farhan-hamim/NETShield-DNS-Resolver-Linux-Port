@@ -30,13 +30,27 @@ jobs:
       - name: Work out package version
         id: ver
         run: |
-          base="$(sed -n 's/.*versionName *= *"\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n1)"
+          # Try a couple of common Kotlin DSL spellings; fall back to 0.0.0 if none match
+          # rather than ever producing a version that doesn't start with a digit.
+          base="$(grep -h 'versionName' app/build.gradle.kts \
+                 | sed -nE 's/.*versionName[^"'"'"']*["'"'"']([^"'"'"']+)["'"'"'].*/\1/p' \
+                 | head -n1)"
+          base="${base:-0.0.0}"
+          echo "Found base version: $base (from app/build.gradle.kts)"
+
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             version="${GITHUB_REF_NAME#v}"
           else
             # e.g. 3.0.0+git20260925.abc1234 (sorts after 3.0.0, so it never masks a real release)
             version="${base}+git$(date -u +%Y%m%d).${GITHUB_SHA::7}"
           fi
+
+          # Guarantee a Debian-legal version no matter what the above produced.
+          if [[ ! "$version" =~ ^[0-9] ]]; then
+            echo "::warning::computed version '$version' doesn't start with a digit; using 0.0.0 fallback"
+            version="0.0.0+git$(date -u +%Y%m%d).${GITHUB_SHA::7}"
+          fi
+
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Package version: $version"
 
