@@ -1,0 +1,31 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove)
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload >/dev/null 2>&1 || true
+        fi
+        ;;
+    purge)
+        rm -rf /var/lib/netshield /var/log/netshield
+        rmdir /etc/netshield 2>/dev/null || true
+        if getent passwd netshield >/dev/null 2>&1; then
+            deluser --system netshield >/dev/null 2>&1 || true
+        fi
+        if getent group netshield >/dev/null 2>&1; then
+            delgroup --system netshield >/dev/null 2>&1 || true
+        fi
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload >/dev/null 2>&1 || true
+        fi
+        ;;
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+    *)
+        echo "postrm called with unknown argument '$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

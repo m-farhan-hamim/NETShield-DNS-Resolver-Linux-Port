@@ -1,0 +1,59 @@
+.TH NETSHIELD 1 "2026" "netshield-dns" "NetShield DNS Resolver"
+.SH NAME
+netshield \- control the NetShield DNS resolver
+.SH SYNOPSIS
+.B netshield
+[\fB\-\-socket\fR \fIPATH\fR] \fIcommand\fR [\fIargs\fR]
+.SH DESCRIPTION
+.B netshield
+talks to the running \fBnetshield-dns\fR service over its control socket
+(\fI/run/netshield/control.sock\fR). The socket is accessible to root and to
+members of the \fBnetshield\fR group.
+.SH COMMANDS
+.TP
+.B status
+Show state, upstream, rule counts and query statistics.
+.TP
+\fBpause\fR [\fITIME\fR]
+Stop blocking for \fITIME\fR (seconds, or with an m/h/d suffix; default 5m).
+.TP
+.B resume
+Resume blocking immediately.
+.TP
+.B sync
+Download the blocklists listed in \fIsources.list\fR now.
+.TP
+.B reload
+Re-read \fInetshield.conf\fR, \fIrules.conf\fR, \fItrusted.list\fR and the cached blocklists.
+Changes to \fBlisten_address\fR or \fBport\fR require a service restart.
+.TP
+.B flush
+Clear the response cache.
+.TP
+\fBcheck\fR \fIDOMAIN\fR
+Explain how the resolver would treat a domain.
+.TP
+\fBlogs\fR [\fIN\fR]
+Show the last \fIN\fR queries (default 20).
+.TP
+.B version
+Print the version.
+.SH FILES
+.TP
+.I /etc/netshield/netshield.conf
+Main configuration.
+.TP
+.I /etc/netshield/rules.conf
+Custom block / allow / map rules.
+.TP
+.I /etc/netshield/sources.list
+Blocklist download URLs.
+.TP
+.I /etc/netshield/trusted.list
+Domains exempt from blocking and limits.
+.TP
+.I /var/log/netshield/queries.log
+Query log (if enabled).
+.SH SEE ALSO
+.BR systemctl (1),
+.BR journalctl (1)

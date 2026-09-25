@@ -1,0 +1,4 @@
+# Trusted domains: never blocked and exempt from per-client limits.
+# One domain per line; subdomains are trusted too. Apply with:  sudo netshield reload
+#
+# example.com

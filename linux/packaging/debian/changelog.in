@@ -1,0 +1,8 @@
+netshield-dns (@VERSION@) unstable; urgency=medium
+
+  * Linux/Debian port of the NetShield DNS Resolver Android app: headless
+    UDP+TCP resolver daemon, DoH/DoT/UDP upstreams, hosts-format blocklists,
+    custom block/allow/local-record rules, response cache, query log, systemd
+    service and the "netshield" admin command.
+
+ -- M. Farhan Hamim <mfhamim95@gmail.com>  @DATE@

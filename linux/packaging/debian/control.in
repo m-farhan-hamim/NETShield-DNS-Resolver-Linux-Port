@@ -1,0 +1,18 @@
+Package: netshield-dns
+Version: @VERSION@
+Architecture: all
+Maintainer: M. Farhan Hamim <mfhamim95@gmail.com>
+Installed-Size: @SIZE@
+Depends: default-jre-headless (>= 2:1.17) | java17-runtime-headless, adduser
+Section: net
+Priority: optional
+Description: local DNS resolver and sinkhole (ad/tracker blocker)
+ NetShield is a local DNS resolver that blocks ads, trackers and unwanted
+ domains at the DNS level. This is the Linux/Debian port of the NetShield DNS
+ Resolver Android app by PSBDx.
+ .
+ It answers DNS queries over UDP and TCP, forwards allowed queries upstream
+ over DNS-over-HTTPS, DNS-over-TLS or plain UDP, caches answers, applies
+ hosts-format blocklists plus custom block/allow/local-record rules, and keeps
+ an optional query log. It runs as an unprivileged systemd service and is
+ managed with the "netshield" command.

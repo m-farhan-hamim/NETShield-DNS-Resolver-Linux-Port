@@ -1,0 +1,27 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        if ! getent passwd netshield >/dev/null 2>&1; then
+            adduser --system --group --no-create-home --home /var/lib/netshield netshield >/dev/null
+        fi
+        install -d -o netshield -g netshield -m 0750 /var/lib/netshield /var/log/netshield
+
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload >/dev/null 2>&1 || true
+            systemctl enable netshield-dns.service >/dev/null 2>&1 || true
+            # start on first install, restart on upgrade
+            systemctl restart netshield-dns.service >/dev/null 2>&1 || \
+                echo "netshield-dns: could not start the service; see 'systemctl status netshield-dns'" >&2
+        fi
+        ;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+    *)
+        echo "postinst called with unknown argument '$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

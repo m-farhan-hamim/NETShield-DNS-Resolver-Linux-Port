@@ -1,0 +1,107 @@
+name: Build Debian package
+
+# Builds the Linux port (linux/) into a .deb: netshield-dns_<version>_all.deb plus a
+# stable-name copy, main.deb. Independent of the Android workflow (build.yml).
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deb:
+    name: Build .deb
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # only used to attach the .deb to a GitHub Release on v* tags
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Work out package version
+        id: ver
+        run: |
+          base="$(sed -n 's/.*versionName *= *"\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n1)"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            # e.g. 3.0.0+git20260925.abc1234 (sorts after 3.0.0, so it never masks a real release)
+            version="${base}+git$(date -u +%Y%m%d).${GITHUB_SHA::7}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Package version: $version"
+
+      # Compiles with --release 17, runs the unit tests, builds the jar and the .deb.
+      - name: Build .deb
+        env:
+          DEB_VERSION: ${{ steps.ver.outputs.version }}
+        run: linux/packaging/build-deb.sh
+
+      # Starts the real daemon against a fake upstream (no internet needed).
+      - name: Integration smoke test
+        run: linux/tests/smoke.sh
+
+      - name: Lint package (informational)
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lintian
+          lintian --info --display-info linux/dist/main.deb || true
+
+      # Installs the package on the runner (runs postinst, starts the systemd service),
+      # checks it answers real queries, then removes and purges it.
+      - name: Install test
+        run: |
+          sudo apt-get install -y -qq bind9-dnsutils
+          sudo apt-get install -y ./linux/dist/main.deb
+
+          for i in $(seq 1 30); do
+            sudo netshield status >/dev/null 2>&1 && break
+            sleep 1
+          done
+          sudo netshield status
+          systemctl is-active --quiet netshield-dns
+
+          echo "--- forwarded query (real upstream over DoH)"
+          dig +short +time=10 @127.0.0.1 -p 5335 example.com | tee /tmp/fwd.txt
+          test -s /tmp/fwd.txt
+
+          echo "--- blocked query"
+          echo "block blocked.example.test" | sudo tee -a /etc/netshield/rules.conf >/dev/null
+          sudo netshield reload
+          test "$(dig +short @127.0.0.1 -p 5335 ads.blocked.example.test)" = "0.0.0.0"
+
+          echo "--- remove / purge"
+          sudo apt-get remove -y -qq netshield-dns
+          ! systemctl is-active --quiet netshield-dns
+          sudo apt-get purge -y -qq netshield-dns
+          ! getent passwd netshield
+          test ! -e /var/lib/netshield
+
+      - name: Service logs (on failure)
+        if: failure()
+        run: |
+          sudo journalctl -u netshield-dns --no-pager -n 100 || true
+          sudo systemctl status netshield-dns --no-pager || true
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-deb
+          path: linux/dist/*.deb
+          retention-days: 90
+
+      - name: Attach .deb to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: linux/dist/*.deb

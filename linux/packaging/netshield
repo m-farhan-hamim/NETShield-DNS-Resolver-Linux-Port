@@ -1,0 +1,4 @@
+#!/bin/sh
+# NetShield DNS Resolver - admin command (talks to the netshield-dns service)
+exec /usr/bin/java -Xshare:auto -XX:TieredStopAtLevel=1 -XX:+UseSerialGC -XX:-UsePerfData \
+    -cp /usr/share/netshield-dns/netshield-dns.jar com.psbdx.netshield.Cli "$@"

@@ -1,0 +1,6 @@
+# Blocklists to download, one per line:  <url> [display name]
+# hosts-file format ("0.0.0.0 domain") and plain domain-per-line lists both work.
+# file:///path/to/list.txt URLs work too. Refresh now with:  sudo netshield sync
+# Prefix a line with # to disable a source.
+https://adaway.org/hosts.txt AdAway Default Blocklist
+https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts StevenBlack Unified Hosts
